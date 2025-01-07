@@ -49,7 +49,7 @@ func (server *Server) setupRouter() {
 	authRoutes.GET("/search", server.searchUser)
 	server.router = router
 
-	router.Static("upload/avt", "./upload/avt")
+	router.Static("upload/avatar", "./upload/avatar")
 
 }
 

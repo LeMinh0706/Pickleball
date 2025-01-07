@@ -116,7 +116,7 @@ func (server *Server) updatePosition(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	update, err := server.queries.UpdatePosition(ctx, db.UpdatePositionParams{ID: user.ID, Lat: user.Lat, Lng: user.Lng})
+	update, err := server.queries.UpdatePosition(ctx, db.UpdatePositionParams{ID: user.ID, Lat: req.Lat, Lng: req.Lng})
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
@@ -195,7 +195,7 @@ func (server *Server) updateAvatar(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(fmt.Errorf("ảnh không đúng định dạng")))
 		return
 	}
-	fileName := fmt.Sprintf("upload/%s/%d%s", "avt", time.Now().Unix(), filepath.Ext(image.Filename))
+	fileName := fmt.Sprintf("upload/%s/%d%s", "avatar", time.Now().Unix(), filepath.Ext(image.Filename))
 	if err := ctx.SaveUploadedFile(image, fileName); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
