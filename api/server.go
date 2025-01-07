@@ -44,8 +44,12 @@ func (server *Server) setupRouter() {
 	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
 	authRoutes.GET("/users/profile", server.myProfile)
 	authRoutes.PUT("/users", server.updatePosition)
+	authRoutes.PUT("/users/avt", server.updateAvatar)
 	authRoutes.POST("/users", server.getUsers)
+	authRoutes.GET("/search", server.searchUser)
 	server.router = router
+
+	router.Static("upload/avt", "./upload/avt")
 
 }
 

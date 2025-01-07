@@ -38,8 +38,8 @@ RETURNING id, fullname, gender, avt, lat, lng;
 SELECT id, fullname, gender, avt, lat, lng
 FROM users
 WHERE fullname ILIKE '%' || $1 || '%'
-LIMIT $1
-OFFSET $2;
+LIMIT $2
+OFFSET $3;
 
 -- name: CountUser :one
 SELECT count(id)
