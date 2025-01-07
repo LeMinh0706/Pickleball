@@ -1,19 +1,23 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	db "github.com/LeMinh0706/simplebank/db/sqlc"
+	"github.com/LeMinh0706/simplebank/token"
 	"github.com/LeMinh0706/simplebank/util"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 type Register struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Fullname string `json:"fullname"`
-	Gender   int32  `json:"gender"`
+	Username string  `json:"username"`
+	Password string  `json:"password"`
+	Fullname string  `json:"fullname"`
+	Gender   int32   `json:"gender"`
+	Lat      float64 `json:"lat"`
+	Lng      float64 `json:"lng"`
 }
 
 func (server *Server) createUser(ctx *gin.Context) {
@@ -28,20 +32,6 @@ func (server *Server) createUser(ctx *gin.Context) {
 		return
 	}
 
-	// image, err := ctx.FormFile("image")
-
-	// if err != nil {
-	// 	ctx.JSON(http.StatusBadRequest, errorResponse(err))
-	// }
-
-	// if !util.ExtCheck(image.Filename) {
-	// 	ctx.JSON(http.StatusBadRequest, errorResponse(fmt.Errorf("ảnh không đúng định dạng")))
-	// }
-	// fileName := fmt.Sprintf("upload/%s/%d%s", "avt", time.Now().Unix(), filepath.Ext(image.Filename))
-	// if err := ctx.SaveUploadedFile(image, fileName); err != nil {
-	// 	ctx.JSON(http.StatusBadRequest, errorResponse(err))
-	// 	return
-	// }
 	uuid, _ := uuid.NewRandom()
 	user, err := server.queries.CreateUser(ctx, db.CreateUserParams{
 		ID:       uuid,
@@ -50,8 +40,8 @@ func (server *Server) createUser(ctx *gin.Context) {
 		Fullname: req.Fullname,
 		Gender:   req.Gender,
 		Avt:      util.RandomAvatar(req.Gender),
-		Lat:      0,
-		Lng:      0,
+		Lat:      req.Lat,
+		Lng:      req.Lng,
 	})
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -60,6 +50,88 @@ func (server *Server) createUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, user)
 }
 
-func (server *Server) loginUser(ctx *gin.Context) {
+type Login struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
 
+type LoginResponse struct {
+	AccessToken string `json:"access_token"`
+}
+
+func (server *Server) loginUser(ctx *gin.Context) {
+	var req Login
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	user, err := server.queries.GetUser(ctx, req.Username)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(fmt.Errorf("sai tài khoản hoặc mật khẩu")))
+		return
+	}
+	err = util.CheckPassword(req.Password, user.Password)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(fmt.Errorf("sai tài khoản hoặc mật khẩu")))
+		return
+	}
+	token, err := server.tokenMaker.CreateToken(req.Username, server.config.AccessTokenDuration)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	ctx.JSON(http.StatusOK, LoginResponse{AccessToken: token})
+}
+
+func (server *Server) myProfile(ctx *gin.Context) {
+	auth := ctx.MustGet(authorizationPayLoadKey).(*token.Payload)
+
+	user, err := server.queries.GetMyProfile(ctx, auth.Username)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, user)
+}
+
+func (server *Server) updatePosition(ctx *gin.Context) {
+	auth := ctx.MustGet(authorizationPayLoadKey).(*token.Payload)
+
+	user, err := server.queries.GetMyProfile(ctx, auth.Username)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	update, err := server.queries.UpdatePosition(ctx, db.UpdatePositionParams{ID: user.ID, Lat: user.Lat, Lng: user.Lng})
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	ctx.JSON(http.StatusOK, update)
+}
+
+type Position struct {
+	Lat    float64 `json:"lat"`
+	Lng    float64 `json:"lng"`
+	Radius float64 `json:"radius"`
+}
+
+func (server *Server) getUsers(ctx *gin.Context) {
+	var req Position
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	users, err := server.queries.GetUsers(ctx, db.GetUsersParams{
+		Radians:   req.Lat,
+		Radians_2: req.Lng,
+		Lat:       req.Radius,
+	})
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	ctx.JSON(http.StatusOK, users)
 }
