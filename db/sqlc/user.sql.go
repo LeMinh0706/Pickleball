@@ -7,47 +7,68 @@ package db
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users(
+    id,
     username,
-    hashed_password,
-    full_name,
-    email
+    password,
+    fullname,
+    gender,
+    avt,
+    lat,
+    lng
 ) VALUES(
-    $1, $2, $3, $4
-) RETURNING username, hashed_password, full_name, email, password_change_at, created_at
+    $1, $2, $3, $4, $5, $6, $7, $8
+) RETURNING fullname, gender, avt, lat, lng
 `
 
 type CreateUserParams struct {
-	Username       string `json:"username"`
-	HashedPassword string `json:"hashed_password"`
-	FullName       string `json:"full_name"`
-	Email          string `json:"email"`
+	ID       uuid.UUID `json:"id"`
+	Username string    `json:"username"`
+	Password string    `json:"password"`
+	Fullname string    `json:"fullname"`
+	Gender   int32     `json:"gender"`
+	Avt      string    `json:"avt"`
+	Lat      float64   `json:"lat"`
+	Lng      float64   `json:"lng"`
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+type CreateUserRow struct {
+	Fullname string  `json:"fullname"`
+	Gender   int32   `json:"gender"`
+	Avt      string  `json:"avt"`
+	Lat      float64 `json:"lat"`
+	Lng      float64 `json:"lng"`
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
 	row := q.db.QueryRowContext(ctx, createUser,
+		arg.ID,
 		arg.Username,
-		arg.HashedPassword,
-		arg.FullName,
-		arg.Email,
+		arg.Password,
+		arg.Fullname,
+		arg.Gender,
+		arg.Avt,
+		arg.Lat,
+		arg.Lng,
 	)
-	var i User
+	var i CreateUserRow
 	err := row.Scan(
-		&i.Username,
-		&i.HashedPassword,
-		&i.FullName,
-		&i.Email,
-		&i.PasswordChangeAt,
-		&i.CreatedAt,
+		&i.Fullname,
+		&i.Gender,
+		&i.Avt,
+		&i.Lat,
+		&i.Lng,
 	)
 	return i, err
 }
 
 const getUser = `-- name: GetUser :one
-SELECT username, hashed_password, full_name, email, password_change_at, created_at FROM users
+SELECT id, username, password, fullname, gender, avt, lat, lng, created_at FROM users
 WHERE username = $1 LIMIT 1
 `
 
@@ -55,11 +76,14 @@ func (q *Queries) GetUser(ctx context.Context, username string) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUser, username)
 	var i User
 	err := row.Scan(
+		&i.ID,
 		&i.Username,
-		&i.HashedPassword,
-		&i.FullName,
-		&i.Email,
-		&i.PasswordChangeAt,
+		&i.Password,
+		&i.Fullname,
+		&i.Gender,
+		&i.Avt,
+		&i.Lat,
+		&i.Lng,
 		&i.CreatedAt,
 	)
 	return i, err

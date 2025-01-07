@@ -6,38 +6,18 @@ package db
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
-type Account struct {
-	ID        int64     `json:"id"`
-	Owner     string    `json:"owner"`
-	Balance   int64     `json:"balance"`
-	Currency  string    `json:"currency"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-type Entry struct {
-	ID        int64 `json:"id"`
-	AccountID int64 `json:"account_id"`
-	// can be nagative or positive
-	Amount    int64     `json:"amount"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-type Transfer struct {
-	ID            int64 `json:"id"`
-	FromAccountID int64 `json:"from_account_id"`
-	ToAccountID   int64 `json:"to_account_id"`
-	// must be positive
-	Amount    int64     `json:"amount"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
 type User struct {
-	Username         string    `json:"username"`
-	HashedPassword   string    `json:"hashed_password"`
-	FullName         string    `json:"full_name"`
-	Email            string    `json:"email"`
-	PasswordChangeAt time.Time `json:"password_change_at"`
-	CreatedAt        time.Time `json:"created_at"`
+	ID        uuid.UUID `json:"id"`
+	Username  string    `json:"username"`
+	Password  string    `json:"password"`
+	Fullname  string    `json:"fullname"`
+	Gender    int32     `json:"gender"`
+	Avt       string    `json:"avt"`
+	Lat       float64   `json:"lat"`
+	Lng       float64   `json:"lng"`
+	CreatedAt time.Time `json:"created_at"`
 }
